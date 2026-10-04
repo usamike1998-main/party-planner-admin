@@ -77,9 +77,46 @@ function SelectedEvent(selectedEvent) {
     </time>
     <p>${location}</p>
     <p>${description}</p>
+    <button id="event_delete"> Delete Event </button>
 `;
+  const $deleteEvent = $event.querySelector("#event_delete");
+  $deleteEvent.addEventListener("click", (e) => {
+    e.preventDefault();
+    deleteEventAPI(selectedEvent.id);
+  });
 
   return $event;
+}
+
+function NewEventForm() {
+  const $form = document.createElement("form");
+  $form.innerHTML = `
+  <label>
+    <input placeholder="Name"  required name="name"/>
+  </label>
+  <label>
+    <input placeholder="Description"  required name="description"/>
+  </label>
+  <label>
+    <input  type="date" required name="date"/>
+  </label>
+  <label>
+    <input placeholder="Location"  required name="location"/>
+  </label>
+  <button> Add Party </button>
+  `;
+  $form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const data = new FormData($form);
+    const date = new Date(data.get("date")).toISOString();
+    createEventAPI({
+      name: data.get("name"),
+      description: data.get("description"),
+      date,
+      location: data.get("location"),
+    });
+  });
+  return $form;
 }
 
 function render() {
@@ -89,11 +126,13 @@ function render() {
     <main>
       <section>
         <h2>Upcoming Parties</h2>
-        <EventsList/>
+        <EventsList></EventsList>
+        <h3>Add a new party</h3>
+        <NewEventForm></NewEventForm>
       </section>
       <section id="selected">
         <h2>Party Details</h2>
-        <SelectedEvent/>
+        <SelectedEvent></SelectedEvent>
       </section>
     </main>
   `;
@@ -102,6 +141,7 @@ function render() {
   $app
     .querySelector("SelectedEvent")
     .replaceWith(SelectedEvent(state.selectedEvent));
+  $app.querySelector("NewEventForm").replaceWith(NewEventForm());
 }
 
 function init() {
@@ -113,52 +153,32 @@ init();
 
 async function deleteEventAPI(id) {
   try {
-    const response = await fetch(`API/events/${id}`, {
+    const response = await fetch(`${API}/events/${id}`, {
       method: "DELETE",
     });
-    const deletedEventIndex = state.events.find((event) => event.id === id);
+    const deletedEventIndex = state.events.findIndex(
+      (event) => event.id === id,
+    );
     state.events.splice(deletedEventIndex, 1);
+    state.selectedEvent = null;
+    render();
   } catch (e) {
     console.error(e);
   }
 }
 
-async function createEvent(event) {
+async function createEventAPI(event) {
   try {
     const response = await fetch(API + "/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(event),
     });
+    const result = await response.json();
+    state.events.push(result);
+    render();
     console.log(response);
   } catch (e) {
     console.error(e);
   }
 }
-
-function NewPartyForm() {
-  const $form = document.createElement("form");
-  $form.innerHTML = `
-  <label>
-    <input placeholder="Name"  required name="name"/>
-  <label/>
-  <label>
-    <input placeholder="Description"  required name="description"/>
-  <label/>
-  <label>
-    <input placeholder="Date"  required name="date"/>
-  <label/>
-  <label>
-    <input placeholder="Location"  required name="location"/>
-  <label/>
-  <button> Add Party </button>
-  `;
-  $form.addEventListener("submit", onFormSubmit);
-}
-
-createParty({
-  name: "Test",
-  description: "ssdfhsk;fj",
-  date: "11-25-1943",
-  location: "SF",
-});
