@@ -175,7 +175,8 @@ async function createEventAPI(event) {
       body: JSON.stringify(event),
     });
     const result = await response.json();
-    state.events.push(result);
+    state.events.push(result.data);
+
     render();
     console.log(response);
   } catch (e) {
